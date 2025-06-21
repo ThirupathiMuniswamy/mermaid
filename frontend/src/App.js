@@ -2,8 +2,15 @@ import React from 'react';
 import ChatbotWidget from './ChatbotWidget';
 import './App.css';
 
+import Visualizer from './Visualizer';
+
 function App() {
-  return <ChatbotWidget />;
+  return (
+    <div>
+      <Visualizer />
+      <ChatbotWidget />
+    </div>
+  );
 }
 
 export default App;

@@ -46,11 +46,18 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             user_msg = await websocket.receive_text()
-            # Run the agent asynchronously
+            await websocket.send_json({"step": "received", "detail": "Message received from client"})
+            # Run the agent asynchronously, with tool-calling step tracking
+            await websocket.send_json({"step": "agent_invoked", "detail": "AI Agent invoked"})
+            # Patch agent to emit tool steps if possible
+            # For now, just simulate tool call detection
+            # In production, you should hook into the agent/tool call events
+            if "payment" in user_msg.lower():
+                await websocket.send_json({"step": "tool_invoked", "tool": "Payment history", "detail": "Calling MCP tool"})
             response = await agent.ainvoke(
                 {"messages": [{"role": "user", "content": user_msg}]}
             )
-            await websocket.send_json({"message": response})
+            await websocket.send_json({"step": "completed", "detail": "Response ready", "message": response})
     except WebSocketDisconnect:
         pass
 
