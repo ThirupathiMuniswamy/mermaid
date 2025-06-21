@@ -1,0 +1,12 @@
+.venv
+.env
+node_modules
+backend/.venv
+mcp_server/.venv
+frontend/node_modules
+backend/venv
+mcp_server/venv
+frontend/venv
+backend/.venv
+mcp_server/.venv
+frontend/node_modules

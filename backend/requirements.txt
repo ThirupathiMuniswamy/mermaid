@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+langchain_mcp_adapters
+langgraph
+openai
+azure-identity
