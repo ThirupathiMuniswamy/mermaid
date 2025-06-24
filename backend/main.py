@@ -34,7 +34,7 @@ async def setup_agent():
         }
     )
     tools = await client.get_tools()
-    agent = create_react_agent(LLM_MODEL, tools)
+    # agent = create_react_agent(LLM_MODEL, tools)
 
 @app.on_event("startup")
 async def on_startup():
@@ -46,18 +46,16 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             user_msg = await websocket.receive_text()
-            await websocket.send_json({"step": "received", "detail": "Message received from client"})
-            # Run the agent asynchronously, with tool-calling step tracking
-            await websocket.send_json({"step": "agent_invoked", "detail": "AI Agent invoked"})
-            # Patch agent to emit tool steps if possible
-            # For now, just simulate tool call detection
-            # In production, you should hook into the agent/tool call events
+            # Send step events to the visualizer
+            await websocket.send_json({"target": "visualizer", "step": "received", "detail": "Message received from client"})
+            await websocket.send_json({"target": "visualizer", "step": "agent_invoked", "detail": "AI Agent invoked"})
             if "payment" in user_msg.lower():
-                await websocket.send_json({"step": "tool_invoked", "tool": "Payment history", "detail": "Calling MCP tool"})
-            response = await agent.ainvoke(
-                {"messages": [{"role": "user", "content": user_msg}]}
-            )
-            await websocket.send_json({"step": "completed", "detail": "Response ready", "message": response})
+                await websocket.send_json({"target": "visualizer", "step": "tool_invoked", "tool": "Payment history", "detail": "Calling MCP tool"})
+            # response = await agent.ainvoke(
+            #     {"messages": [{"role": "user", "content": user_msg}]}
+            # )
+            # Only the final response to chatbot
+            await websocket.send_json({"target": "chatbot", "step": "completed", "detail": "Response ready"})
     except WebSocketDisconnect:
         pass
 

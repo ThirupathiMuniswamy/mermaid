@@ -8,22 +8,32 @@ const steps = [
   { key: 'completed', label: 'Response', icon: '📤' },
 ];
 
-function Visualizer({ wsUrl = 'ws://localhost:8080/ws' }) {
+function Visualizer({ socket }) {
   const [currentStep, setCurrentStep] = useState(null);
   const [stepLog, setStepLog] = useState([]);
 
   useEffect(() => {
-    const ws = new window.WebSocket(wsUrl);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.step) {
-        setCurrentStep(data.step);
-        setStepLog((prev) => [...prev, data]);
+    if (!socket) return;
+
+    const handleMessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Visualizer received:', data); // Debug log
+        if (data.target === 'visualizer' && data.step) {
+          setCurrentStep(data.step);
+          setStepLog(prev => [...prev, data]);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
       }
     };
-    ws.onclose = () => setCurrentStep(null);
-    return () => ws.close();
-  }, [wsUrl]);
+
+    socket.addEventListener('message', handleMessage);
+    
+    return () => {
+      socket.removeEventListener('message', handleMessage);
+    };
+  }, [socket]);
 
   return (
     <div className="visualizer-bg">
