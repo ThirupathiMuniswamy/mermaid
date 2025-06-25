@@ -39,21 +39,24 @@ function Visualizer({ socket }) {
 
   return (
     <div className="visualizer-bg">
-      <div className="visualizer-title">Visualizer</div>
-      <div className="visualizer-flow">
+      <div className="visualizer-flow-vertical">
+        <div className="visualizer-arrow visualizer-arrow-origin" title="Request to Agent">↓</div>
         {steps.map((step, idx) => (
           <React.Fragment key={step.key}>
             <div className={`visualizer-node${currentStep === step.key ? ' active' : ''}`}>
               <span className="visualizer-icon">{step.icon}</span>
               {step.label}
             </div>
-            {idx < steps.length - 1 && <div className="visualizer-edge" />}
+            {idx < steps.length - 1 && (
+              <div className="visualizer-arrow">↓</div>
+            )}
           </React.Fragment>
         ))}
+        <div className="visualizer-arrow visualizer-arrow-origin" title="Response to Origin">↑</div>
       </div>
-      <div className="visualizer-log">
-        <strong>Step Log</strong>
-        <ul style={{ margin: 0, paddingLeft: 18 }}>
+      <div className="visualizer-log-card">
+        <div className="visualizer-log-title">Step Log</div>
+        <ul className="visualizer-log-list">
           {stepLog.map((log, idx) => (
             <li key={idx}>
               <strong>{log.step}</strong>: {log.detail} {log.tool ? `(Tool: ${log.tool})` : ''}

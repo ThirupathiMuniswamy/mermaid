@@ -34,13 +34,55 @@
   margin: 0 28px 22px 28px;
 }
 
-.visualizer-flow {
+.visualizer-flow-vertical {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  margin: 18px 0 14px 0;
-  position: relative;
+  margin: 32px 0;
+  width: 100%;
 }
+
+.visualizer-arrow {
+  font-size: 2rem;
+  color: #b0b8c9;
+  margin: 6px 0;
+  text-align: center;
+}
+.visualizer-arrow-origin {
+  font-size: 2.5rem;
+  color: #2563eb;
+  opacity: 0.7;
+  margin: 10px 0;
+}
+
+/* Remove or keep .visualizer-flow if needed for other layouts */
+
+.visualizer-log-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid #e5e7eb;
+  margin: 28px 0 0 0;
+  padding: 20px 28px;
+}
+.visualizer-log-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-bottom: 12px;
+}
+.visualizer-log-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.visualizer-log-list li {
+  margin-bottom: 8px;
+  font-size: 0.98rem;
+  color: #222;
+}
+
 
 .visualizer-node {
   background: #f5f7fa;
