@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './ChatbotWidget.css';
 
 function ChatbotWidget({ socket }) {
-  const [open, setOpen] = useState(false);
+
   const [messages, setMessages] = useState([
     { sender: 'bot', text: 'Hey, I am your assistant! How can I help you today?' }
   ]);
@@ -13,6 +13,9 @@ function ChatbotWidget({ socket }) {
   // Handle WebSocket messages
   useEffect(() => {
     if (!socket) return;
+
+    // Always show chat window as a panel
+    // No open/close logic needed
 
     const handleMessage = (event) => {
       try {
@@ -65,7 +68,7 @@ function ChatbotWidget({ socket }) {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, open]);
+  }, [messages]);
 
   const handleSend = () => {
     const message = input.trim();
@@ -92,34 +95,24 @@ function ChatbotWidget({ socket }) {
   };
 
   return (
-    <div>
-      <div className={`chatbot-fab${open ? ' open' : ''}`} onClick={() => setOpen((o) => !o)}>
-        <span role="img" aria-label="chat">💬</span>
+    <div className="chatbot-window">
+      <div className="chatbot-messages">
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`chatbot-msg ${msg.sender}`}>{msg.text}</div>
+        ))}
+        <div ref={chatEndRef} />
       </div>
-      {open && (
-        <div className="chatbot-window">
-          <div className="chatbot-header">
-            <span>Chatbot</span>
-            <button className="chatbot-close" onClick={() => setOpen(false)}>×</button>
-          </div>
-          <div className="chatbot-messages">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`chatbot-msg ${msg.sender}`}>{msg.text}</div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-          <div className="chatbot-input-row">
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              placeholder="Type a message..."
-            />
-            <button onClick={handleSend} disabled={open && !wsReady}>Send</button>
-          </div>
-        </div>
-      )}
+      <div className="chatbot-input-row">
+        <input
+          className="chatbot-input"
+          type="text"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          placeholder="Message..."
+        />
+        <button className="chatbot-send-btn" onClick={handleSend} disabled={!wsReady}>Send</button>
+      </div>
     </div>
   );
 }

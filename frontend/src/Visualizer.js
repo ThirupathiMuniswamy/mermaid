@@ -9,8 +9,10 @@ const steps = [
 ];
 
 function Visualizer({ socket }) {
-  const [currentStep, setCurrentStep] = useState(null);
-  const [stepLog, setStepLog] = useState([]);
+  const [currentStep, setCurrentStep] = useState('received');
+  const [stepLog, setStepLog] = useState([
+    { step: 'received', detail: 'Waiting for message...' }
+  ]);
 
   useEffect(() => {
     if (!socket) return;

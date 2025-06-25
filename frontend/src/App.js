@@ -35,16 +35,32 @@ function App() {
   }, []);
 
   return (
-    <div className="app-container">
-      <div 
-        className="connection-status" 
-        data-status={connectionStatus}
-      >
-        Status: {connectionStatus}
-      </div>
-      <div className="components-container">
-        <Visualizer socket={socket} />
-        <ChatbotWidget socket={socket} />
+    <div className="app-bg">
+
+      <div className="main-split">
+        <div className="agent-panel" style={{ width: '60%' }}>
+          <div className="panel-header">Agent View</div>
+          <div className="section card">
+            <div className="section-title">Available Agents</div>
+            {/* Collapsible content placeholder */}
+          </div>
+          <div className="section card">
+            <div className="section-title">Guardrails</div>
+            {/* Collapsible content placeholder */}
+          </div>
+          <div className="section card">
+            <div className="section-title">Conversation Context</div>
+            {/* Collapsible content placeholder */}
+          </div>
+          <div className="section card">
+            <div className="section-title">Runner Output</div>
+            <Visualizer socket={socket} />
+          </div>
+        </div>
+        <div className="customer-panel" style={{ width: '40%' }}>
+          <div className="panel-header">Customer View</div>
+          <ChatbotWidget socket={socket} />
+        </div>
       </div>
     </div>
   );
