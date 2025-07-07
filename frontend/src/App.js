@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import ChatbotWidget from './ChatbotWidget';
+import ChatbotHttpWidget from './ChatbotHttpWidget';
 import Visualizer from './Visualizer';
 import './App.css';
 import AgentStatusTile from './AgentStatusTile';
-import ToolsAgentsTile from './ToolsAgentsTile';
 import OrchestrationTile from './OrchestrationTile';
+import ToolsAgentsTile from './ToolsAgentsTile';
 
 function App() {
   const [socket, setSocket] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [agentStep, setAgentStep] = useState('verify');
+  const [insightsResponse, setInsightsResponse] = useState('');
 
   useEffect(() => {
     const ws = new WebSocket('ws://localhost:8080/ws');
@@ -37,6 +40,7 @@ function App() {
     };
   }, []);
 
+
   return (
     <div className="app-bg">
 
@@ -46,7 +50,7 @@ function App() {
           <br/>
           <br/>
           <div className="section card">
-            <AgentStatusTile />
+            <AgentStatusTile currentStep={agentStep} insightsResponse={insightsResponse} />
           </div>
           <div className="section card">
             <OrchestrationTile />
@@ -58,6 +62,8 @@ function App() {
         <div className="customer-panel" style={{ width: '40%' }}>
           <div className="panel-header">Customer View</div>
           <ChatbotWidget socket={socket} />
+            <div style={{marginTop: 24}} />
+            <ChatbotHttpWidget agentStep={agentStep} setAgentStep={setAgentStep} setInsightsResponse={setInsightsResponse} />
         </div>
         
       </div>

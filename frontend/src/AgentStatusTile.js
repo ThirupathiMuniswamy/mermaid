@@ -2,14 +2,14 @@ import React from 'react';
 import './App.css';
 import robotIcon from './chatbot.png';
 
-export default function AgentStatusTile() {
+export default function AgentStatusTile({ currentStep = 'verify', insightsResponse }) {
   return (
     <div className="agent-status-tile">
       <div className="agent-status-header">Customer Engagement AI Agent</div>
       <div className="agent-status-content">
         <div className="agent-status-steps-col">
-          <button className="agent-step-btn agent-step-btn-active">Verify</button>
-          <button className="agent-step-btn">Decide</button>
+          <button className={`agent-step-btn${currentStep === 'verify' ? ' agent-step-btn-active' : ''}`}>Verify</button>
+          <button className={`agent-step-btn${currentStep === 'decide' ? ' agent-step-btn-active' : ''}`}>Decide</button>
         </div>
         <div className="agent-status-ace-col">
           <div className="agent-ace-icon"><img src={robotIcon} alt="Robot" style={{ width: 64, height: 64 }} /></div>
@@ -21,7 +21,12 @@ export default function AgentStatusTile() {
         <span className="agent-status-outcome-label">Outcome</span>
         </div>
         <div className="agent-status-steps-last-row-col">
-        <button className="agent-step-btn agent-step-btn-insights">Insights</button>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className={`agent-step-btn agent-step-btn-insights${currentStep === 'insights' ? ' agent-step-btn-active' : ''}`}>Insights</button>
+          {currentStep === 'insights' && insightsResponse && (
+            <span style={{ marginLeft: 12, color: '#007bff', fontWeight: 500, whiteSpace: 'pre-line' }}>{insightsResponse}</span>
+          )}
+        </div>
         </div>
       </div>
     </div>
