@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import ChatbotWidget from './ChatbotWidget';
 import Visualizer from './Visualizer';
 import './App.css';
+import AgentStatusTile from './AgentStatusTile';
+import ToolsAgentsTile from './ToolsAgentsTile';
+import OrchestrationTile from './OrchestrationTile';
 
 function App() {
   const [socket, setSocket] = useState(null);
@@ -40,27 +43,23 @@ function App() {
       <div className="main-split">
         <div className="agent-panel" style={{ width: '60%' }}>
           <div className="panel-header">Agent View</div>
+          <br/>
+          <br/>
           <div className="section card">
-            <div className="section-title">Available Agents</div>
-            {/* Collapsible content placeholder */}
+            <AgentStatusTile />
           </div>
           <div className="section card">
-            <div className="section-title">Guardrails</div>
-            {/* Collapsible content placeholder */}
+            <OrchestrationTile />
           </div>
           <div className="section card">
-            <div className="section-title">Conversation Context</div>
-            {/* Collapsible content placeholder */}
-          </div>
-          <div className="section card">
-            <div className="section-title">Runner Output</div>
-            <Visualizer socket={socket} />
+            <ToolsAgentsTile />
           </div>
         </div>
         <div className="customer-panel" style={{ width: '40%' }}>
           <div className="panel-header">Customer View</div>
           <ChatbotWidget socket={socket} />
         </div>
+        
       </div>
     </div>
   );

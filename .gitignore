@@ -10,3 +10,4 @@ frontend/venv
 backend/.venv
 mcp_server/.venv
 frontend/node_modules
+.DS_Store
