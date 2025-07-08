@@ -94,6 +94,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS sessions (
     session_id TEXT PRIMARY KEY,
     last_intent TEXT,
     policy_number TEXT,
+    pending_action TEXT,
     last_used REAL
 )''')
 conn.commit()
@@ -111,16 +112,36 @@ async def chatbot(req):
 
     # Fetch session state from SQLite
     if session_id:
-        c.execute('SELECT last_intent, policy_number FROM sessions WHERE session_id=?', (session_id,))
+        c.execute('SELECT last_intent, policy_number, pending_action FROM sessions WHERE session_id=?', (session_id,))
         row = c.fetchone()
         if not row:
-            c.execute('INSERT INTO sessions (session_id, last_intent, policy_number, last_used) VALUES (?, NULL, NULL, ?)', (session_id, now))
+            c.execute('INSERT INTO sessions (session_id, last_intent, policy_number, pending_action, last_used) VALUES (?, NULL, NULL, NULL, ?)', (session_id, now))
             conn.commit()
-            last_intent, policy = None, None
+            last_intent, policy, pending_action = None, None, None
         else:
-            last_intent, policy = row
+            last_intent, policy, pending_action = row
     else:
-        last_intent, policy = None, None
+        last_intent, policy, pending_action = None, None, None
+
+    # --- EasyPay follow-up handling ---
+    if session_id and pending_action == "eazypay_offer":
+        user_reply = req.message.strip().lower()
+        if user_reply in ["yes", "ok", "yep", "sure"]:
+            # Instruct agent to call EasyPay tool
+            followup_prompt = (
+                f"The user previously received an offer to enroll in EasyPay. "
+                f"They responded '{req.message}'. Call the EasyPay tool for policy number {policy}."
+            )
+            agent_result = agent.invoke({"input": followup_prompt})
+            reply = agent_result["output"] if isinstance(agent_result, dict) and "output" in agent_result else str(agent_result)
+            c.execute('UPDATE sessions SET pending_action=NULL, last_used=? WHERE session_id=?', (now, session_id))
+            conn.commit()
+            return {"reply": reply}
+        elif user_reply in ["no", "nope"]:
+            c.execute('UPDATE sessions SET pending_action=NULL, last_used=? WHERE session_id=?', (now, session_id))
+            conn.commit()
+            return {"reply": "Okay, you have not been enrolled in EasyPay."}
+        # If not a clear yes/no, fall through to normal agent logic
 
     # Compose context for the agent
     session_context = {
@@ -135,6 +156,11 @@ async def chatbot(req):
     # Call the agent (sync call for now)
     agent_result = agent.invoke({"input": agent_prompt})
     reply = agent_result["output"] if isinstance(agent_result, dict) and "output" in agent_result else str(agent_result)
+
+    # Detect if agent offered EasyPay and set pending_action
+    if session_id and ("would you like to enroll in easypay" in reply.lower() or "would you like to enroll in easy pay" in reply.lower()):
+        c.execute('UPDATE sessions SET pending_action=? WHERE session_id=?', ("eazypay_offer", session_id))
+        conn.commit()
 
     # Optionally update session state (for demo, just update last_used)
     if session_id:
