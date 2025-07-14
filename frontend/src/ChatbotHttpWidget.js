@@ -11,6 +11,7 @@ function uuidv4() {
 
 
 export default function ChatbotHttpWidget({ agentStep, setAgentStep, setInsightsResponse }) {
+  const [awaitingPaymentConfirmation, setAwaitingPaymentConfirmation] = useState(false);
   const sessionIdRef = useRef(uuidv4());
   const [messages, setMessages] = useState([
     { sender: 'bot', text: 'Hey, I am your assistant! How can I help you today?' }
@@ -35,6 +36,35 @@ export default function ChatbotHttpWidget({ agentStep, setAgentStep, setInsights
     if (!message) return;
     setMessages(prev => [...prev, { sender: 'user', text: message }]);
     setInput('');
+
+    // If awaiting payment confirmation, check for positive response
+    if (awaitingPaymentConfirmation) {
+      if (/^(yes( please)?|okay|sure|confirm|pay)/i.test(message)) {
+        setLoading(true);
+        try {
+          const res = await fetch('http://localhost:5001/api/update_account_info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: sessionIdRef.current,
+              make_payment: true // Only need sessionId and make_payment for this call
+            })
+          });
+          const data = await res.json();
+          setMessages(prev => [...prev, { sender: 'system', text: data.payment_result ? String(data.payment_result) : 'Payment processed.' }]);
+        } catch (err) {
+          setMessages(prev => [...prev, { sender: 'system', text: 'Error: Could not process payment.' }]);
+        }
+        setAwaitingPaymentConfirmation(false);
+        setLoading(false);
+        return;
+      } else if (/^(no|not now|later|cancel)/i.test(message)) {
+        setMessages(prev => [...prev, { sender: 'bot', text: 'Okay, your payment method is updated. Let me know if you wish to pay later.' }]);
+        setAwaitingPaymentConfirmation(false);
+        return;
+      }
+    }
+
     setAgentStep('verify'); // Step 1: Verify intent
     setInsightsResponse(''); // Clear previous insights
     setLoading(true);
@@ -63,6 +93,7 @@ export default function ChatbotHttpWidget({ agentStep, setAgentStep, setInsights
     setLoading(false);
   };
 
+
   // Handle BankAccountModal submit
   const handleBankModalSubmit = async (formData) => {
     setModalLoading(true);
@@ -81,7 +112,12 @@ export default function ChatbotHttpWidget({ agentStep, setAgentStep, setInsights
       if (data.success) {
         setModalSuccess('Account information updated successfully.');
         setShowBankModal(false);
-        setMessages(prev => [...prev, { sender: 'system', text: 'Your payment method has been updated.' }]);
+        setMessages(prev => [
+          ...prev,
+          { sender: 'system', text: 'Your payment method has been updated.' },
+          { sender: 'bot', text: 'Would you like to pay your outstanding balance now?' }
+        ]);
+        setAwaitingPaymentConfirmation(true);
       } else {
         setModalError(data.message || 'Failed to update account info.');
       }
