@@ -95,7 +95,9 @@ c.execute('''CREATE TABLE IF NOT EXISTS sessions (
     last_intent TEXT,
     policy_number TEXT,
     pending_action TEXT,
-    last_used REAL
+    last_used REAL,
+    account_info TEXT,
+    last_decision TEXT
 )''')
 conn.commit()
 
@@ -148,19 +150,32 @@ async def chatbot(req):
         "policyNumber": policy,
         "last_intent": last_intent
     }
+
+    # --- Improved agent prompt for payment/payment method intent ---
     agent_prompt = (
-        f"You are an AI assistant. Extract the user's intent from their message and call the correct tool. "
-        f"If making a payment, use any known info from session: {session_context}. "
+        "You are an AI Agent who assists customers with making payments and updating their payment methods.\n"
+        "Thiru is a customer who is logged in, authenticated, and the system knows the policy number #79450054509.\n"
+        "The customer may have an intent to: make a payment only, change the payment method only, or do both at the same time.\n"
+        "If the customer’s message has the intent to change the payment method (alone or along with payment), respond strictly with: 'Please provide your account details to change your payment method.'\n"
+        "If the user's intent is only to make a payment, respond strictly with: 'You have an outstanding payment of $50, please confirm to go ahead and make payment.' For this, use the payment tool to make the payment.\n"
+        "Always use any known session information.\n"
         f"User message: {req.message}"
     )
     # Call the agent (sync call for now)
     agent_result = agent.invoke({"input": agent_prompt})
     reply = agent_result["output"] if isinstance(agent_result, dict) and "output" in agent_result else str(agent_result)
 
-    # Detect if agent offered EasyPay and set pending_action
-    if session_id and ("would you like to enroll in easypay" in reply.lower() or "would you like to enroll in easy pay" in reply.lower()):
-        c.execute('UPDATE sessions SET pending_action=? WHERE session_id=?', ("eazypay_offer", session_id))
-        conn.commit()
+    # --- Session logic for account info and last decision tracking ---
+    # If user is asked for account details, set pending_action and last_decision
+    if session_id:
+        if "please provide your account details to change your payment method" in reply.lower():
+            c.execute('UPDATE sessions SET pending_action=?, last_decision=?, last_used=? WHERE session_id=?',
+                      ("awaiting_account_info", "payment_method_change", now, session_id))
+            conn.commit()
+        elif "please confirm to go ahead and make payment" in reply.lower():
+            c.execute('UPDATE sessions SET pending_action=?, last_decision=?, last_used=? WHERE session_id=?',
+                      (None, "payment", now, session_id))
+            conn.commit()
 
     # Optionally update session state (for demo, just update last_used)
     if session_id:
@@ -169,6 +184,57 @@ async def chatbot(req):
 
     return {"reply": reply}
 
+
+from fastapi import Body
+import json
+
+@app.post("/api/update_account_info")
+async def update_account_info(
+    sessionId: str = Body(...),
+    first_name: str = Body(...),
+    last_name: str = Body(...),
+    routing_number: str = Body(...),
+    account_number: str = Body(...),
+    confirm_account_number: str = Body(...),
+    account_type: str = Body(...),
+    make_payment: bool = Body(False)
+):
+    # Basic validation
+    if account_number != confirm_account_number:
+        return {"success": False, "message": "Account numbers do not match."}
+    account_info = {
+        "first_name": first_name,
+        "last_name": last_name,
+        "routing_number": routing_number,
+        "account_number": account_number,
+        "account_type": account_type
+    }
+    now = time.time()
+    # Determine last_decision
+    last_decision = "both" if make_payment else "payment_method_changed"
+    # Store account info and decision
+    c.execute('UPDATE sessions SET account_info=?, last_decision=?, last_used=? WHERE session_id=?',
+              (json.dumps(account_info), last_decision, now, sessionId))
+    conn.commit()
+    payment_result = None
+    if make_payment:
+        # Fetch policy number from session
+        c.execute('SELECT policy_number FROM sessions WHERE session_id=?', (sessionId,))
+        row = c.fetchone()
+        policy_number = row[0] if row and row[0] else None
+        # Call payment tool if policy number is present
+        if policy_number:
+            payment_result = payment_tool({
+                'policyNbr': policy_number,
+                'sessionId': sessionId
+            })
+        else:
+            payment_result = 'Policy number not found, payment not made.'
+    return {
+        "success": True,
+        "message": "Account information updated successfully." if not make_payment else "Account information updated and payment processed.",
+        "payment_result": payment_result
+    }
 
 if __name__ == '__main__':
     import uvicorn
